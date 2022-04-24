@@ -20,6 +20,7 @@
 #include "hilite.hh"
 #include "vtedefines.hh"
 #include "vteinternal.hh"
+#include <iostream>
 
 using namespace vte::base;
 
@@ -65,6 +66,8 @@ Hilite::find_word(const char *haystack, const char *needle, GArray *map,
     match.attr = (attr & attrmask);
     match.attrmask = attrmask;
 
+    std::cout << "match " << needle << " " << match.start.row() << ", " << match.start.column() << std::endl;
+
     g_array_append_val (m_matches, match);
 
     off = p - haystack + 1;
@@ -109,6 +112,7 @@ Hilite::paragraph(RingView *ringview, vte::grid::row_t start, vte::grid::row_t e
 
   /* some examples to play with */
   for(auto pattern : m_patterns) {
+      std::cout << "find match for " << pattern.pattern << std::endl;
     find_word(string->str, pattern.pattern.c_str(), map,
               pattern.foremask, pattern.fore,
               pattern.backmask, pattern.back,

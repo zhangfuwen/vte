@@ -423,11 +423,11 @@ char *vte_terminal_hyperlink_check_event(VteTerminal *terminal,
 
 #endif /* _VTE_GTK */
 
-int
-vte_terminal_highlight_add_string(VteTerminal *terminal, const char *str) _VTE_CXX_NOEXCEPT;
+_VTE_PUBLIC
+int vte_terminal_highlight_add_string(VteTerminal *terminal, const char *str) _VTE_CXX_NOEXCEPT;
 
-int
-vte_terminal_highlight_clear(VteTerminal *terminal) _VTE_CXX_NOEXCEPT;
+_VTE_PUBLIC
+int vte_terminal_highlight_clear(VteTerminal *terminal) _VTE_CXX_NOEXCEPT;
 
 /* Add a matching expression, returning the tag the widget assigns to that
  * expression. */

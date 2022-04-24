@@ -528,7 +528,13 @@ public:
           base::HilitePattern pat;
           pat.pattern = str;
           pat.backmask = 0xffffffff;
-          pat.back = 0x00ff0000;
+          pat.back = 11;
+          pat.foremask = 0xffffffff;
+          pat.fore = 9;
+          pat.decomask = 0;
+          pat.deco = 0;
+          pat.attrmask = 0;
+          pat.attr = 0;
           m_ringview.get_hilite()->add_pattern(pat);
           return 0;
         }
