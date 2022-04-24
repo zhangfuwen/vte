@@ -20,6 +20,7 @@
 #include <glib.h>
 
 #include "bidi.hh"
+#include "hilite.hh"
 #include "ring.hh"
 #include "vterowdata.hh"
 #include "vtetypes.hh"
@@ -31,6 +32,7 @@ namespace base {
 
 class BidiRow;
 class BidiRunner;
+class Hilite;
 
 /*
  * RingView provides a "view" to a continuous segment of the Ring (or stream),
@@ -82,6 +84,8 @@ public:
 
         BidiRow const* get_bidirow(vte::grid::row_t row) const;
 
+        Hilite const* get_hilite() const { return m_hilite; }
+
 private:
         Ring *m_ring{nullptr};
 
@@ -95,6 +99,8 @@ private:
         int m_bidirows_alloc_len{0};
 
         std::unique_ptr<BidiRunner> m_bidirunner;
+
+        Hilite * m_hilite{nullptr};
 
         vte::grid::row_t m_top{0};  /* the row of the Ring corresponding to m_rows[0] */
 

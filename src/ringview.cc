@@ -19,6 +19,7 @@
 
 #include "bidi.hh"
 #include "debug.h"
+#include "hilite.hh"
 #include "vtedefines.hh"
 #include "vteinternal.hh"
 
@@ -66,6 +67,8 @@ RingView::pause()
         g_free (m_bidirows);
         m_bidirows_alloc_len = 0;
 
+        delete m_hilite;
+
         m_invalid = true;
         m_paused = true;
 }
@@ -95,6 +98,8 @@ RingView::resume()
         for (int i = 0; i < m_bidirows_alloc_len; i++) {
                 m_bidirows[i] = new BidiRow();
         }
+
+        m_hilite = new Hilite();
 
         _vte_debug_print (VTE_DEBUG_RINGVIEW, "Ringview: resume, allocating %d rows, %d bidirows\n",
                                               m_rows_alloc_len, m_bidirows_alloc_len);
@@ -271,6 +276,8 @@ RingView::update()
                                               m_start - m_top, (m_top + m_rows_len) - (m_start + m_len),
                                               m_top, m_top + m_rows_len - 1, m_rows_len);
 
+        m_hilite->clear();
+
         /* Loop through paragraphs of the extracted text, and do whatever we need to do on each paragraph. */
         auto top = m_top;
         row = top;
@@ -284,7 +291,7 @@ RingView::update()
                                                 m_enable_bidi, m_enable_shaping);
 
                         /* Doing syntax highlighting etc. come here in the future. */
-
+                        m_hilite->paragraph(this, top, row + 1);
                         top = row + 1;
                 }
                 row++;

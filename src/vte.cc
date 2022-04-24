@@ -8717,6 +8717,7 @@ Terminal::draw_rows(VteScreen *screen_,
                         /* Find the colors for this cell. */
                         selected = cell_is_selected_vis(i, row);
                         determine_colors(cell, selected, &fore, &back, &deco);
+                        m_ringview.get_hilite()->highlight(row, bidirow->vis2log(i), &fore, &back, &deco, &attr);
                         rtl = bidirow->vis_is_rtl(i);
 
                         while (++j < column_count) {
@@ -8727,6 +8728,7 @@ Terminal::draw_rows(VteScreen *screen_,
                                  * in this chunk. */
                                 selected = cell_is_selected_vis(j, row);
                                 determine_colors(cell, selected, &nfore, &nback, &ndeco);
+                                m_ringview.get_hilite()->highlight(row, bidirow->vis2log(j), &nfore, &nback, &ndeco, &nattr);
                                 nrtl = bidirow->vis_is_rtl(j);
                                 if (nback != back || (_vte_debug_on (VTE_DEBUG_BIDI) && nrtl != rtl)) {
                                         break;
@@ -8848,6 +8850,7 @@ Terminal::draw_rows(VteScreen *screen_,
                         nattr = cell->attr.attr;
                         selected = cell_is_selected_log(lcol, row);
                         determine_colors(cell, selected, &nfore, &nback, &ndeco);
+                        m_ringview.get_hilite()->highlight(row, lcol, &nfore, &nback, &ndeco, &nattr);
 
                         /* See if it no longer fits the run. */
                         if (item_count > 0 &&

@@ -178,6 +178,8 @@ libvte_common_sources = config_sources + debug_sources + glib_glue_sources + gtk
   'clipboard-gtk.cc',
   'clipboard-gtk.hh',
   'color-triple.hh',
+  'hilite.cc',
+  'hilite.hh',
   'cxx-utils.hh',
   'drawing-cairo.cc',
   'drawing-cairo.hh',
