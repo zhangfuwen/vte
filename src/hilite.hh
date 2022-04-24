@@ -27,6 +27,7 @@
 #include "vterowdata.hh"
 #include "vtetypes.hh"
 #include "vteunistr.h"
+#include "vte/vtehilite.h"
 
 namespace vte {
 
@@ -43,12 +44,12 @@ struct HiliteMatch {
   uint32_t attr, attrmask;
 };
 
-struct HilitePattern {
-  std::string pattern;
-  uint32_t fore, foremask;
-  uint32_t back, backmask;
-  uint32_t deco, decomask;
-  uint32_t attr, attrmask;
+struct HiLitePattern {
+    std::string pattern;
+    bool regex;
+    bool case_sensitive;
+    bool whole_word;
+    _HighlightStyle style;
 };
 
 class Hilite {
@@ -71,17 +72,14 @@ public:
   void highlight(vte::grid::row_t row, vte::grid::column_t col, uint32_t *fore,
                  uint32_t *back, uint32_t *deco, uint32_t *attr) const;
 
-  void add_pattern(HilitePattern &pattern);
-  void clear_patterns();
+  int add_pattern(const HiLitePattern &pattern);
+  int clear_patterns();
 
 private:
   GArray *m_matches; /* array of HiliteMatch entries */
-  std::vector<HilitePattern> m_patterns; /* array of pattern entries to hilight */
+  std::vector<HiLitePattern> m_patterns; /* array of pattern entries to hilight */
 
-  void find_word(const char *haystack, const char *needle, GArray *map,
-                 uint32_t foremask, uint32_t fore, uint32_t backmask,
-                 uint32_t back, uint32_t decomask, uint32_t deco,
-                 uint32_t attrmask, uint32_t attr);
+  void find_word(const char *haystack, GArray *map, const HiLitePattern &pat);
 };
 
 }; /* namespace base */

@@ -42,31 +42,27 @@ Hilite::clear()
 
 /* FIXME Gotta find a regex instead */
 void
-Hilite::find_word(const char *haystack, const char *needle, GArray *map,
-                  uint32_t foremask, uint32_t fore,
-                  uint32_t backmask, uint32_t back,
-                  uint32_t decomask, uint32_t deco,
-                  uint32_t attrmask, uint32_t attr)
+Hilite::find_word(const char *haystack, GArray *map, const HiLitePattern &pat)
 {
   int off = 0;
 
   const char *p;
 
-  while ((p = strcasestr(haystack + off, needle)) != NULL) {
+  while ((p = strcasestr(haystack + off, pat.pattern.c_str())) != NULL) {
     HiliteMatch match;
 
     match.start = g_array_index (map, vte::grid::coords, p - haystack);
-    match.end = g_array_index (map, vte::grid::coords, p - haystack + strlen(needle));
-    match.fore = (fore & foremask);
-    match.foremask = foremask;
-    match.back = (back & backmask);
-    match.backmask = backmask;
-    match.deco = (deco & decomask);
-    match.decomask = decomask;
-    match.attr = (attr & attrmask);
-    match.attrmask = attrmask;
+    match.end = g_array_index (map, vte::grid::coords, p - haystack + pat.pattern.size());
+    match.fore = (pat.style.fore & pat.style.foremask);
+    match.foremask = pat.style.foremask;
+    match.back = (pat.style.back & pat.style.backmask);
+    match.backmask = pat.style.backmask;
+    match.deco = (pat.style.deco & pat.style.decomask);
+    match.decomask = pat.style.decomask;
+    match.attr = (pat.style.attr & pat.style.attrmask);
+    match.attrmask = pat.style.attrmask;
 
-    std::cout << "match " << needle << " " << match.start.row() << ", " << match.start.column() << std::endl;
+    std::cout << "match " << pat.pattern << " " << match.start.row() << ", " << match.start.column() << std::endl;
 
     g_array_append_val (m_matches, match);
 
@@ -113,12 +109,7 @@ Hilite::paragraph(RingView *ringview, vte::grid::row_t start, vte::grid::row_t e
   /* some examples to play with */
   for(auto pattern : m_patterns) {
       std::cout << "find match for " << pattern.pattern << std::endl;
-    find_word(string->str, pattern.pattern.c_str(), map,
-              pattern.foremask, pattern.fore,
-              pattern.backmask, pattern.back,
-              pattern.decomask, pattern.deco,
-              pattern.attrmask, pattern.attr
-              );
+    find_word(string->str, map, pattern);
   }
 
   g_array_free (map, true);
@@ -151,10 +142,12 @@ Hilite::highlight(vte::grid::row_t row,
   }
 }
 
-void Hilite::add_pattern(HilitePattern &pattern) {
+int Hilite::add_pattern(const HiLitePattern &pattern) {
   m_patterns.emplace_back(pattern);
+  return 0;
 }
 
-void Hilite::clear_patterns() {
+int Hilite::clear_patterns() {
   m_patterns.clear();
+  return 0;
 }

@@ -24,6 +24,7 @@ libvte_common_public_headers = files(
   'vtemacros.h',
   'vtepty.h',
   'vteregex.h',
+  'vtehilite.h',
   'vteterminal.h',
   'vtetypebuiltins.h',
 )

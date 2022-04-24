@@ -114,12 +114,14 @@ typedef enum _VteCharacterReplacement {
         VTE_CHARACTER_REPLACEMENT_LINE_DRAWING
 } VteCharacterReplacement;
 
+
 typedef struct _VtePaletteColor {
 	struct {
 		vte::color::rgb color;
 		gboolean is_set;
 	} sources[2];
 } VtePaletteColor;
+
 
 struct VteScreen {
 public:
@@ -524,23 +526,26 @@ public:
 
         constexpr bool sixel_enabled() const noexcept { return m_sixel_enabled; }
 
-        int highlight_add_string(const char *str) {
-          base::HilitePattern pat;
-          pat.pattern = str;
-          pat.backmask = 0xffffffff;
-          pat.back = 11;
-          pat.foremask = 0xffffffff;
-          pat.fore = 9;
-          pat.decomask = 0;
-          pat.deco = 0;
-          pat.attrmask = 0;
-          pat.attr = 0;
-          m_ringview.get_hilite()->add_pattern(pat);
-          return 0;
+        int highlight_add_pattern(const char *str, const HighlightPattern &pattern) {
+            base::HiLitePattern pat;
+            pat.pattern = pattern.pattern;
+            pat.whole_word = pattern.whole_word;
+            pat.regex = pattern.regex;
+            pat.case_sensitive = pattern.case_sensitive;
+            pat.style = pattern.style;
+            return m_ringview.get_hilite()->add_pattern(pat);
+        }
+        int highlight_add_string(const char *str, HighlightStyle style) {
+            base::HiLitePattern pat;
+            pat.style = style;
+            pat.pattern = str;
+            pat.regex = false;
+            pat.case_sensitive = false;
+            pat.whole_word = false;
+          return m_ringview.get_hilite()->add_pattern(pat);
         }
         int highlight_clear() {
-          m_ringview.get_hilite()->clear();
-          return 0;
+          return m_ringview.get_hilite()->clear_patterns();
         }
 
 	/* State variables for handling match checks. */

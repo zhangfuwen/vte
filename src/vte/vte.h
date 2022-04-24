@@ -29,6 +29,7 @@
 #include "vteglobals.h"
 #include "vtepty.h"
 #include "vteregex.h"
+#include "vtehilite.h"
 #include "vteterminal.h"
 #include "vtetypebuiltins.h"
 #include "vteversion.h"

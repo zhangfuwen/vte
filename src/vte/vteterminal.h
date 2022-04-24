@@ -30,6 +30,7 @@
 #include "vtemacros.h"
 #include "vtepty.h"
 #include "vteregex.h"
+#include "vtehilite.h"
 
 G_BEGIN_DECLS
 
@@ -424,7 +425,10 @@ char *vte_terminal_hyperlink_check_event(VteTerminal *terminal,
 #endif /* _VTE_GTK */
 
 _VTE_PUBLIC
-int vte_terminal_highlight_add_string(VteTerminal *terminal, const char *str) _VTE_CXX_NOEXCEPT;
+int vte_terminal_highlight_add_string(VteTerminal *terminal, const char *str, HighlightStyle style) _VTE_CXX_NOEXCEPT;
+
+_VTE_PUBLIC
+int vte_terminal_highlight_add_pattern(VteTerminal *terminal, HighlightPattern pattern) _VTE_CXX_NOEXCEPT;
 
 _VTE_PUBLIC
 int vte_terminal_highlight_clear(VteTerminal *terminal) _VTE_CXX_NOEXCEPT;

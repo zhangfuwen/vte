@@ -2871,10 +2871,10 @@ catch (...)
  * vte_terminal_highlight_add_string
  */
 int
-vte_terminal_highlight_add_string(VteTerminal *terminal, const char *str) noexcept
+vte_terminal_highlight_add_string(VteTerminal *terminal, const char *str, HighlightStyle style) noexcept
 try {
   auto impl = IMPL(terminal);
-  return impl->highlight_add_string(str);
+  return impl->highlight_add_string(str, style);
 }
 catch (...)
 {
