@@ -45,11 +45,10 @@ struct HiliteMatch {
 };
 
 struct HiLitePattern {
-    std::string pattern;
     bool regex;
-    bool case_sensitive;
-    bool whole_word;
+    uint32_t regex_flags;
     _HighlightStyle style;
+    std::string pattern;
 };
 
 class Hilite {

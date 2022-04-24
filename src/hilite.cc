@@ -21,6 +21,7 @@
 #include "vtedefines.hh"
 #include "vteinternal.hh"
 #include <iostream>
+#include <regex>
 
 using namespace vte::base;
 
@@ -44,30 +45,79 @@ Hilite::clear()
 void
 Hilite::find_word(const char *haystack, GArray *map, const HiLitePattern &pat)
 {
-  int off = 0;
+    if(pat.regex) {
+        int off = 0;
+        std::smatch sm;
+        std::regex * regex_pattern;
+        try {
+            if(pat.regex_flags != 0) {
+                std::regex::flag_type flag{};
+                if(pat.regex_flags | PCRE2_CASELESS) {
+                    flag |= std::regex_constants::icase;
+                }
+                regex_pattern = new std::regex(pat.pattern, flag);
+            } else {
+                regex_pattern = new std::regex(pat.pattern);
+            }
+        } catch (std::exception &e) {
+            return;
+        }
+        while(true) {
+            auto s = std::string(haystack + off);
+            bool ret = std::regex_search(s, sm, *regex_pattern);
+            if(ret) {
+                auto start_pos = sm.position();
+                auto end_pos = start_pos + sm.length();
+                HiliteMatch match;
 
-  const char *p;
+                match.start = g_array_index (map, vte::grid::coords, start_pos);
+                match.end = g_array_index (map, vte::grid::coords, end_pos);
+                match.fore = (pat.style.fore & pat.style.foremask);
+                match.foremask = pat.style.foremask;
+                match.back = (pat.style.back & pat.style.backmask);
+                match.backmask = pat.style.backmask;
+                match.deco = (pat.style.deco & pat.style.decomask);
+                match.decomask = pat.style.decomask;
+                match.attr = (pat.style.attr & pat.style.attrmask);
+                match.attrmask = pat.style.attrmask;
 
-  while ((p = strcasestr(haystack + off, pat.pattern.c_str())) != NULL) {
-    HiliteMatch match;
+                std::cout << "match " << pat.pattern << " " << match.start.row() << ", " << match.start.column() << std::endl;
 
-    match.start = g_array_index (map, vte::grid::coords, p - haystack);
-    match.end = g_array_index (map, vte::grid::coords, p - haystack + pat.pattern.size());
-    match.fore = (pat.style.fore & pat.style.foremask);
-    match.foremask = pat.style.foremask;
-    match.back = (pat.style.back & pat.style.backmask);
-    match.backmask = pat.style.backmask;
-    match.deco = (pat.style.deco & pat.style.decomask);
-    match.decomask = pat.style.decomask;
-    match.attr = (pat.style.attr & pat.style.attrmask);
-    match.attrmask = pat.style.attrmask;
+                g_array_append_val (m_matches, match);
 
-    std::cout << "match " << pat.pattern << " " << match.start.row() << ", " << match.start.column() << std::endl;
+                off = end_pos + 1;
+            } else {
+                break;
+            }
+        }
+        delete regex_pattern;
+    } else {
+        int off = 0;
 
-    g_array_append_val (m_matches, match);
+        const char *p;
 
-    off = p - haystack + 1;
-  }
+        while ((p = strcasestr(haystack + off, pat.pattern.c_str())) != NULL) {
+            HiliteMatch match;
+
+            match.start = g_array_index (map, vte::grid::coords, p - haystack);
+            match.end = g_array_index (map, vte::grid::coords, p - haystack + pat.pattern.size());
+            match.fore = (pat.style.fore & pat.style.foremask);
+            match.foremask = pat.style.foremask;
+            match.back = (pat.style.back & pat.style.backmask);
+            match.backmask = pat.style.backmask;
+            match.deco = (pat.style.deco & pat.style.decomask);
+            match.decomask = pat.style.decomask;
+            match.attr = (pat.style.attr & pat.style.attrmask);
+            match.attrmask = pat.style.attrmask;
+
+            std::cout << "match " << pat.pattern << " " << match.start.row() << ", " << match.start.column() << std::endl;
+
+            g_array_append_val (m_matches, match);
+
+            off = p - haystack + 1;
+        }
+
+    }
 }
 
 void

@@ -2868,18 +2868,18 @@ catch (...)
 #if VTE_GTK == 3
 
 /**
- * vte_terminal_highlight_add_string
+ * vte_terminal_highlight_add_pattern
  */
 int
-vte_terminal_highlight_add_string(VteTerminal *terminal, const char *str, HighlightStyle style) noexcept
+vte_terminal_highlight_add_pattern(VteTerminal *terminal, HighlightPattern pat) noexcept
 try {
-  auto impl = IMPL(terminal);
-  return impl->highlight_add_string(str, style);
+    auto impl = IMPL(terminal);
+    return impl->highlight_add_pattern(pat);
 }
 catch (...)
 {
-  vte::log_exception();
-  return -1;
+    vte::log_exception();
+    return -1;
 }
 
 int

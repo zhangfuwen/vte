@@ -526,24 +526,15 @@ public:
 
         constexpr bool sixel_enabled() const noexcept { return m_sixel_enabled; }
 
-        int highlight_add_pattern(const char *str, const HighlightPattern &pattern) {
+        int highlight_add_pattern(const HighlightPattern &pattern) {
             base::HiLitePattern pat;
             pat.pattern = pattern.pattern;
-            pat.whole_word = pattern.whole_word;
             pat.regex = pattern.regex;
-            pat.case_sensitive = pattern.case_sensitive;
+            pat.regex_flags = pattern.regex_flags;
             pat.style = pattern.style;
             return m_ringview.get_hilite()->add_pattern(pat);
         }
-        int highlight_add_string(const char *str, HighlightStyle style) {
-            base::HiLitePattern pat;
-            pat.style = style;
-            pat.pattern = str;
-            pat.regex = false;
-            pat.case_sensitive = false;
-            pat.whole_word = false;
-          return m_ringview.get_hilite()->add_pattern(pat);
-        }
+
         int highlight_clear() {
           return m_ringview.get_hilite()->clear_patterns();
         }

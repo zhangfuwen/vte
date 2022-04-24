@@ -34,8 +34,7 @@ struct _HighlightStyle {
 struct _HighlightPattern {
     const char * pattern;
     bool regex;
-    bool case_sensitive;
-    bool whole_word;
+    uint32_t regex_flags;
     struct _HighlightStyle style;
 };
 
