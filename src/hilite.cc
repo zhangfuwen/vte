@@ -108,40 +108,14 @@ Hilite::paragraph(RingView *ringview, vte::grid::row_t start, vte::grid::row_t e
   g_array_append_val(map, pos);
 
   /* some examples to play with */
-
-  find_word(string->str, "error",   map, 0xFFFFFFFF, 11 /* bright yellow fg */, 0xFFFFFFFF,  9 /* dark red bg */, 0, 0, 0, 0);
-  find_word(string->str, "fail",    map, 0xFFFFFFFF, 11 /* bright yellow fg */, 0xFFFFFFFF,  9 /* dark red bg */, 0, 0, 0, 0);
-  find_word(string->str, "warning", map, 0, 0, 0xFFFFFFFF, 13 /* bright magenta bg */, 0, 0, 0, 0);
-
-  find_word(string->str, "bold",      map, 0, 0, 0, 0, 0, 0, VTE_ATTR_BOLD_MASK, VTE_ATTR_BOLD);
-  find_word(string->str, "italic",    map, 0, 0, 0, 0, 0, 0, VTE_ATTR_ITALIC_MASK, VTE_ATTR_ITALIC);
-  find_word(string->str, "under",     map, 0, 0, 0, 0, 0, 0, VTE_ATTR_UNDERLINE_MASK, VTE_ATTR_UNDERLINE(1));
-  find_word(string->str, "double",    map, 0, 0, 0, 0, 0, 0, VTE_ATTR_UNDERLINE_MASK, VTE_ATTR_UNDERLINE(2));
-  find_word(string->str, "curl",      map, 0, 0, 0, 0, 0, 0, VTE_ATTR_UNDERLINE_MASK, VTE_ATTR_UNDERLINE(3));
-  find_word(string->str, "strike",    map, 0, 0, 0, 0, 0, 0, VTE_ATTR_STRIKETHROUGH_MASK, VTE_ATTR_STRIKETHROUGH);
-  find_word(string->str, "over",      map, 0, 0, 0, 0, 0, 0, VTE_ATTR_OVERLINE_MASK, VTE_ATTR_OVERLINE);
-  find_word(string->str, "blink",     map, 0, 0, 0, 0, 0, 0, VTE_ATTR_BLINK_MASK, VTE_ATTR_BLINK);
-
-  // these two don't work
-  find_word(string->str, "reverse",   map, 0, 0, 0, 0, 0, 0, VTE_ATTR_REVERSE_MASK, VTE_ATTR_REVERSE);
-  find_word(string->str, "invisible", map, 0, 0, 0, 0, 0, 0, VTE_ATTR_INVISIBLE_MASK, VTE_ATTR_INVISIBLE);
-
-  // strcasecmp() can't do caseless utf-8, of course
-  find_word(string->str, "ö",       map, 0, 0, 0xFFFFFFFF, 11 /* bright yellow bg */, 0, 0, 0, 0);
-  find_word(string->str, "Ö",       map, 0, 0, 0xFFFFFFFF, 11 /* bright yellow bg */, 0, 0, 0, 0);
-  find_word(string->str, "ü",       map, 0, 0, 0xFFFFFFFF, 11 /* bright yellow bg */, 0, 0, 0, 0);
-  find_word(string->str, "Ü",       map, 0, 0, 0xFFFFFFFF, 11 /* bright yellow bg */, 0, 0, 0, 0);
-
-  // test CJK: U+4000
-  find_word(string->str, "䀀",      map, 0, 0, 0xFFFFFFFF, 11 /* bright yellow bg */, 0, 0, 0, 0);
-
-  // some (likely) typos
-  find_word(string->str, "deubg",   map, 0, 0, 0, 0, 0xFFFFFFFF,  1 /* dark red undercurl */,  VTE_ATTR_UNDERLINE_MASK, VTE_ATTR_UNDERLINE(3));
-  find_word(string->str, "occured", map, 0, 0, 0, 0, 0xFFFFFFFF,  1 /* dark red undercurl */,  VTE_ATTR_UNDERLINE_MASK, VTE_ATTR_UNDERLINE(3));
-  find_word(string->str, "recieve", map, 0, 0, 0, 0, 0xFFFFFFFF,  1 /* dark red undercurl */,  VTE_ATTR_UNDERLINE_MASK, VTE_ATTR_UNDERLINE(3));
-  find_word(string->str, "loose",   map, 0, 0, 0, 0, 0xFFFFFFFF,  4 /* dark blue undercurl */, VTE_ATTR_UNDERLINE_MASK, VTE_ATTR_UNDERLINE(3));
-
-  /* end of examples */
+  for(auto pattern : m_patterns) {
+    find_word(string->str, pattern.pattern.c_str(), map,
+              pattern.foremask, pattern.fore,
+              pattern.backmask, pattern.back,
+              pattern.decomask, pattern.deco,
+              pattern.attrmask, pattern.attr
+              );
+  }
 
   g_array_free (map, true);
   g_string_free (string, true);
@@ -171,4 +145,12 @@ Hilite::highlight(vte::grid::row_t row,
       return;
     }
   }
+}
+
+void Hilite::add_pattern(HilitePattern &pattern) {
+  m_patterns.emplace_back(pattern);
+}
+
+void Hilite::clear_patterns() {
+  m_patterns.clear();
 }

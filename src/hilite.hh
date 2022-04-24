@@ -20,6 +20,8 @@
 
 #include <glib.h>
 
+#include <vector>
+
 #include "ring.hh"
 #include "ringview.hh"
 #include "vterowdata.hh"
@@ -35,6 +37,14 @@ class RingView;
 struct HiliteMatch {
   vte::grid::coords start;
   vte::grid::coords end; /* exclusive */
+  uint32_t fore, foremask;
+  uint32_t back, backmask;
+  uint32_t deco, decomask;
+  uint32_t attr, attrmask;
+};
+
+struct HilitePattern {
+  std::string pattern;
   uint32_t fore, foremask;
   uint32_t back, backmask;
   uint32_t deco, decomask;
@@ -61,8 +71,12 @@ public:
   void highlight(vte::grid::row_t row, vte::grid::column_t col, uint32_t *fore,
                  uint32_t *back, uint32_t *deco, uint32_t *attr) const;
 
+  void add_pattern(HilitePattern &pattern);
+  void clear_patterns();
+
 private:
   GArray *m_matches; /* array of HiliteMatch entries */
+  std::vector<HilitePattern> m_patterns; /* array of pattern entries to hilight */
 
   void find_word(const char *haystack, const char *needle, GArray *map,
                  uint32_t foremask, uint32_t fore, uint32_t backmask,

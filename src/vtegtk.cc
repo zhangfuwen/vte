@@ -2868,6 +2868,28 @@ catch (...)
 #if VTE_GTK == 3
 
 /**
+ * vte_terminal_highlight_add_string
+ */
+int
+vte_terminal_highlight_add_string(VteTerminal *terminal, const char *str) noexcept
+try {
+  auto impl = IMPL(terminal);
+  return impl->highlight_add_string(str);
+}
+catch (...)
+{
+  vte::log_exception();
+  return -1;
+}
+
+int
+vte_terminal_highlight_clear(VteTerminal *terminal) noexcept
+{
+  auto impl = IMPL(terminal);
+  return impl->highlight_clear();
+}
+
+/**
  * vte_terminal_match_add_gregex:
  * @terminal: a #VteTerminal
  * @gregex: a #GRegex

@@ -84,7 +84,7 @@ public:
 
         BidiRow const* get_bidirow(vte::grid::row_t row) const;
 
-        Hilite const* get_hilite() const { return m_hilite; }
+        Hilite * get_hilite() { return m_hilite; }
 
 private:
         Ring *m_ring{nullptr};

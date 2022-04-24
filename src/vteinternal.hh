@@ -524,6 +524,19 @@ public:
 
         constexpr bool sixel_enabled() const noexcept { return m_sixel_enabled; }
 
+        int highlight_add_string(const char *str) {
+          base::HilitePattern pat;
+          pat.pattern = str;
+          pat.backmask = 0xffffffff;
+          pat.back = 0x00ff0000;
+          m_ringview.get_hilite()->add_pattern(pat);
+          return 0;
+        }
+        int highlight_clear() {
+          m_ringview.get_hilite()->clear();
+          return 0;
+        }
+
 	/* State variables for handling match checks. */
         int m_match_regex_next_tag{0};
         auto regex_match_next_tag() noexcept { return m_match_regex_next_tag++; }
