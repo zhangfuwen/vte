@@ -6560,10 +6560,7 @@ Terminal::maybe_end_selection()
 /*
  * Terminal::select_all:
  *
- * Selects all text within the terminal. Note that we only select the writable
- * region, *not* the scrollback buffer, due to this potentially selecting so
- * much data that putting it on the clipboard either hangs the process for a long
- * time or even crash it directly. (FIXME!)
+ * Selects all text within the terminal (including the scrollback buffer).
  */
 void
 Terminal::select_all()
@@ -6572,8 +6569,8 @@ Terminal::select_all()
 
 	m_selecting_had_delta = TRUE;
 
-        m_selection_resolved.set({m_screen->insert_delta, 0},
-                                 {_vte_ring_next(m_screen->row_data), 0});
+        m_selection_resolved.set ({ _vte_ring_delta (m_screen->row_data), 0 },
+                                  { _vte_ring_next  (m_screen->row_data), 0 });
 
 	_vte_debug_print(VTE_DEBUG_SELECTION, "Selecting *all* text.\n");
 
@@ -9448,6 +9445,7 @@ vte_cairo_get_clip_region(cairo_t *cr)
 bool
 Terminal::widget_mouse_scroll(vte::platform::ScrollEvent const& event)
 {
+	gdouble scroll_speed;
 	gdouble v;
 	gint cnt, i;
 	int button;
@@ -9482,7 +9480,13 @@ Terminal::widget_mouse_scroll(vte::platform::ScrollEvent const& event)
 		return true;
 	}
 
-        v = MAX (1., ceil (m_row_count /* page increment */ / 10.));
+	if (m_scroll_speed == 0) {
+		scroll_speed = ceil (m_row_count /* page increment */ / 10.);
+	} else {
+		scroll_speed = m_scroll_speed;
+	}
+
+	v = MAX (1., scroll_speed);
 	_vte_debug_print(VTE_DEBUG_EVENTS,
 			"Scroll speed is %d lines per non-smooth scroll unit\n",
 			(int) v);
@@ -9790,6 +9794,16 @@ Terminal::decscusr_cursor_shape() const noexcept
         case CursorStyle::eSTEADY_IBEAM:
                 return CursorShape::eIBEAM;
         }
+}
+
+bool
+Terminal::set_scroll_speed(unsigned int scroll_speed)
+{
+        if (scroll_speed == m_scroll_speed)
+                return false;
+
+        m_scroll_speed = scroll_speed;
+        return true;
 }
 
 bool
@@ -10267,6 +10281,26 @@ Terminal::emit_pending_signals()
 
 	emit_adjustment_changed();
 
+        if (m_pending_changes & vte::to_integral(PendingChanges::NOTIFICATION)) {
+                _vte_debug_print (VTE_DEBUG_SIGNALS,
+                                  "Emitting `notification-received'.\n");
+                g_signal_emit(freezer.get(), signals[SIGNAL_NOTIFICATION_RECEIVED], 0,
+                              m_notification_summary.c_str(),
+                              m_notification_body.c_str());
+        }
+
+        if (m_pending_changes & vte::to_integral(PendingChanges::SHELL_PREEXEC)) {
+                _vte_debug_print (VTE_DEBUG_SIGNALS,
+                                  "Emitting `shell-preexec'.\n");
+                g_signal_emit(freezer.get(), signals[SIGNAL_SHELL_PREEXEC], 0);
+        }
+
+        if (m_pending_changes & vte::to_integral(PendingChanges::SHELL_PRECMD)) {
+                _vte_debug_print (VTE_DEBUG_SIGNALS,
+                                  "Emitting `shell-precmd'.\n");
+                g_signal_emit(freezer.get(), signals[SIGNAL_SHELL_PRECMD], 0);
+        }
+
 	if (m_pending_changes & vte::to_integral(PendingChanges::TITLE)) {
                 if (m_window_title != m_window_title_pending) {
                         m_window_title.swap(m_window_title_pending);
@@ -10279,6 +10313,14 @@ Terminal::emit_pending_signals()
 
                 m_window_title_pending.clear();
 	}
+
+	if (m_pending_changes & vte::to_integral(PendingChanges::CONTAINERS)) {
+                _vte_debug_print(VTE_DEBUG_SIGNALS,
+                                 "Notifying `current-container-name' and `current-container-runtime'.\n");
+
+                g_object_notify_by_pspec(freezer.get(), pspecs[PROP_CURRENT_CONTAINER_NAME]);
+                g_object_notify_by_pspec(freezer.get(), pspecs[PROP_CURRENT_CONTAINER_RUNTIME]);
+        }
 
 	if (m_pending_changes & vte::to_integral(PendingChanges::CWD)) {
                 if (m_current_directory_uri != m_current_directory_uri_pending) {

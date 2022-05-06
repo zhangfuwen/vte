@@ -59,6 +59,7 @@
 #include <list>
 #include <queue>
 #include <optional>
+#include <stack>
 #include <string>
 #include <variant>
 #include <vector>
@@ -114,6 +115,18 @@ typedef enum _VteCharacterReplacement {
         VTE_CHARACTER_REPLACEMENT_LINE_DRAWING
 } VteCharacterReplacement;
 
+
+struct VteContainer {
+public:
+        VteContainer(const std::string &name, const std::string &runtime) :
+                m_name{name},
+                m_runtime{runtime}
+        {
+        }
+
+        std::string m_name;
+        std::string m_runtime;
+};
 
 typedef struct _VtePaletteColor {
 	struct {
@@ -439,6 +452,7 @@ public:
         bool m_fallback_scrolling{true};
         bool m_scroll_on_output{false};
         bool m_scroll_on_keystroke{true};
+        guint m_scroll_speed;
         vte::grid::row_t m_scrollback_lines{0};
 
         inline auto scroll_limit_lower() const noexcept
@@ -701,6 +715,12 @@ public:
         gboolean m_cursor_moved_pending;
         gboolean m_contents_changed_pending;
 
+        std::stack<VteContainer> m_containers;
+
+        /* desktop notification */
+        std::string m_notification_summary;
+        std::string m_notification_body;
+
         std::string m_window_title{};
         std::string m_current_directory_uri{};
         std::string m_current_file_uri{};
@@ -714,6 +734,10 @@ public:
                 TITLE = 1u << 0,
                 CWD   = 1u << 1,
                 CWF   = 1u << 2,
+                NOTIFICATION = 1u << 3,
+                SHELL_PREEXEC = 1u << 4,
+                SHELL_PRECMD = 1u << 5,
+                CONTAINERS = 1u << 6,
         };
         unsigned m_pending_changes{0};
 
@@ -1420,6 +1444,7 @@ public:
         bool set_input_enabled(bool enabled);
         bool set_mouse_autohide(bool autohide);
         bool set_rewrap_on_resize(bool rewrap);
+        bool set_scroll_speed(unsigned int scroll_speed);
         bool set_scrollback_lines(long lines);
         bool set_fallback_scrolling(bool set);
         auto fallback_scrolling() const noexcept { return m_fallback_scrolling; }
@@ -1552,6 +1577,9 @@ public:
                              int osc) noexcept;
 
         /* OSC handlers */
+        void handle_urxvt_extension(vte::parser::Sequence const& seq,
+                                    vte::parser::StringTokeniser::const_iterator& token,
+                                    vte::parser::StringTokeniser::const_iterator const& endtoken) noexcept;
         void set_color(vte::parser::Sequence const& seq,
                        vte::parser::StringTokeniser::const_iterator& token,
                        vte::parser::StringTokeniser::const_iterator const& endtoken,

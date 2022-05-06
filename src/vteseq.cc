@@ -19,10 +19,14 @@
 
 #include "config.h"
 
+#include <string>
+
 #include <search.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <unistd.h>
+#include <sys/types.h>
 #ifdef HAVE_SYS_SYSLIMITS_H
 #include <sys/syslimits.h>
 #endif
@@ -1406,6 +1410,121 @@ Terminal::delete_lines(vte::grid::row_t param)
         adjust_adjustments();
 	/* We've modified the display.  Make a note of it. */
         m_text_deleted_flag = TRUE;
+}
+
+void
+Terminal::handle_urxvt_extension(vte::parser::Sequence const& seq,
+                                 vte::parser::StringTokeniser::const_iterator& token,
+                                 vte::parser::StringTokeniser::const_iterator const& endtoken) noexcept
+{
+        if (token == endtoken)
+                return;
+
+        if (*token == "container") {
+                ++token;
+
+                if (token == endtoken)
+                        return;
+
+                const std::string sub_command = *token;
+                ++token;
+
+                if (sub_command == "pop") {
+                        if (token == endtoken)
+                                return;
+
+                        ++token;
+
+                        if (token == endtoken)
+                                return;
+
+                        ++token;
+
+                        if (token == endtoken) {
+                                if (!m_containers.empty()) {
+                                        m_containers.pop();
+                                        m_pending_changes |= vte::to_integral(PendingChanges::CONTAINERS);
+                                }
+
+                                return;
+                        }
+
+                        const std::string uid_token = *token;
+                        ++token;
+
+                        const uid_t uid = getuid();
+                        const std::string uid_str = std::to_string(uid);
+
+                        if (uid_token == uid_str) {
+                                if (!m_containers.empty()) {
+                                        m_containers.pop();
+                                        m_pending_changes |= vte::to_integral(PendingChanges::CONTAINERS);
+                                }
+
+                                return;
+                        }
+
+                        return;
+                } else if (sub_command == "push") {
+                        if (token == endtoken)
+                                return;
+
+                        const std::string name = *token;
+                        ++token;
+
+                        if (token == endtoken)
+                                return;
+
+                        const std::string runtime = *token;
+                        ++token;
+
+                        if (token == endtoken) {
+                                m_containers.emplace(name, runtime);
+                                m_pending_changes |= vte::to_integral(PendingChanges::CONTAINERS);
+                                return;
+                        }
+
+                        const std::string uid_token = *token;
+                        ++token;
+
+                        const uid_t uid = getuid();
+                        const std::string uid_str = std::to_string(uid);
+
+                        if (uid_token == uid_str) {
+                                m_containers.emplace(name, runtime);
+                                m_pending_changes |= vte::to_integral(PendingChanges::CONTAINERS);
+                                return;
+                        }
+
+                        return;
+                }
+
+                return;
+        }
+
+        if (*token == "notify") {
+                ++token;
+
+                if (token == endtoken)
+                        return;
+
+                m_notification_summary = *token;
+                m_notification_body.clear();
+                m_pending_changes |= vte::to_integral(PendingChanges::NOTIFICATION);
+                ++token;
+
+                if (token == endtoken)
+                        return;
+
+                m_notification_body = *token;
+                return;
+        }
+
+        if (*token == "precmd") {
+                m_pending_changes |= vte::to_integral(PendingChanges::SHELL_PRECMD);
+        } else if (*token == "preexec") {
+                m_pending_changes |= vte::to_integral(PendingChanges::SHELL_PREEXEC);
+        }
 }
 
 bool
@@ -6687,6 +6806,10 @@ Terminal::OSC(vte::parser::Sequence const& seq)
                 reset_color(VTE_HIGHLIGHT_FG, VTE_COLOR_SOURCE_ESCAPE);
                 break;
 
+        case VTE_OSC_URXVT_EXTENSION:
+                handle_urxvt_extension(seq, it, cend);
+                break;
+
         case VTE_OSC_XTERM_SET_ICON_TITLE:
         case VTE_OSC_XTERM_SET_XPROPERTY:
         case VTE_OSC_XTERM_SET_COLOR_MOUSE_CURSOR_FG:
@@ -6728,7 +6851,6 @@ Terminal::OSC(vte::parser::Sequence const& seq)
         case VTE_OSC_URXVT_SET_FONT_BOLD_ITALIC:
         case VTE_OSC_URXVT_VIEW_UP:
         case VTE_OSC_URXVT_VIEW_DOWN:
-        case VTE_OSC_URXVT_EXTENSION:
         case VTE_OSC_YF_RQGWR:
         default:
                 break;

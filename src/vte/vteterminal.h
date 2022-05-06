@@ -109,11 +109,9 @@ struct _VteTerminalClass {
 
 	void (*bell)(VteTerminal* terminal);
 
-#if _VTE_GTK == 3
-        /* Compatibility padding due to fedora patches intruding on our ABI */
-        /*< private >*/
-        gpointer _extra_padding[3];
-#endif /* _VTE_GTK == 3 */
+	void (*notification_received)(VteTerminal* terminal, const gchar *summary, const gchar *body);
+	void (*shell_precmd)(VteTerminal* terminal);
+	void (*shell_preexec)(VteTerminal* terminal);
 
         /* Add new vfuncs here, and subtract from the padding below. */
 
@@ -329,6 +327,10 @@ void vte_terminal_set_cursor_shape(VteTerminal *terminal,
 _VTE_PUBLIC
 VteCursorShape vte_terminal_get_cursor_shape(VteTerminal *terminal) _VTE_CXX_NOEXCEPT _VTE_GNUC_NONNULL(1);
 
+_VTE_PUBLIC
+void vte_terminal_set_scroll_speed(VteTerminal *terminal,
+                                   guint scroll_speed) _VTE_CXX_NOEXCEPT _VTE_GNUC_NONNULL(1);
+
 /* Set the number of scrollback lines, above or at an internal minimum. */
 _VTE_PUBLIC
 void vte_terminal_set_scrollback_lines(VteTerminal *terminal,
@@ -518,6 +520,10 @@ _VTE_PUBLIC
 glong vte_terminal_get_column_count(VteTerminal *terminal) _VTE_CXX_NOEXCEPT _VTE_GNUC_NONNULL(1);
 _VTE_PUBLIC
 const char *vte_terminal_get_window_title(VteTerminal *terminal) _VTE_CXX_NOEXCEPT _VTE_GNUC_NONNULL(1);
+_VTE_PUBLIC
+const char *vte_terminal_get_current_container_name(VteTerminal *terminal) _VTE_CXX_NOEXCEPT _VTE_GNUC_NONNULL(1);
+_VTE_PUBLIC
+const char *vte_terminal_get_current_container_runtime(VteTerminal *terminal) _VTE_CXX_NOEXCEPT _VTE_GNUC_NONNULL(1);
 _VTE_PUBLIC
 const char *vte_terminal_get_current_directory_uri(VteTerminal *terminal) _VTE_CXX_NOEXCEPT _VTE_GNUC_NONNULL(1);
 _VTE_PUBLIC

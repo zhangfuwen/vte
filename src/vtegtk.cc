@@ -942,6 +942,12 @@ try
                 case PROP_CURSOR_BLINK_MODE:
                         g_value_set_enum (value, vte_terminal_get_cursor_blink_mode (terminal));
                         break;
+                case PROP_CURRENT_CONTAINER_NAME:
+                        g_value_set_string (value, vte_terminal_get_current_container_name (terminal));
+                        break;
+                case PROP_CURRENT_CONTAINER_RUNTIME:
+                        g_value_set_string (value, vte_terminal_get_current_container_runtime (terminal));
+                        break;
                 case PROP_CURRENT_DIRECTORY_URI:
                         g_value_set_string (value, vte_terminal_get_current_directory_uri (terminal));
                         break;
@@ -992,6 +998,9 @@ try
                         break;
                 case PROP_REWRAP_ON_RESIZE:
                         g_value_set_boolean (value, vte_terminal_get_rewrap_on_resize (terminal));
+                        break;
+                case PROP_SCROLL_SPEED:
+                        g_value_set_uint (value, impl->m_scroll_speed);
                         break;
                 case PROP_SCROLLBACK_LINES:
                         g_value_set_uint (value, vte_terminal_get_scrollback_lines(terminal));
@@ -1129,6 +1138,9 @@ try
                         break;
                 case PROP_REWRAP_ON_RESIZE:
                         vte_terminal_set_rewrap_on_resize (terminal, g_value_get_boolean (value));
+                        break;
+                case PROP_SCROLL_SPEED:
+                        vte_terminal_set_scroll_speed (terminal, g_value_get_uint (value));
                         break;
                 case PROP_SCROLLBACK_LINES:
                         vte_terminal_set_scrollback_lines (terminal, g_value_get_uint (value));
@@ -1274,6 +1286,9 @@ vte_terminal_class_init(VteTerminalClass *klass)
 	klass->child_exited = NULL;
 	klass->encoding_changed = NULL;
 	klass->char_size_changed = NULL;
+	klass->notification_received = NULL;
+	klass->shell_precmd = NULL;
+	klass->shell_preexec = NULL;
 	klass->window_title_changed = NULL;
 	klass->icon_title_changed = NULL;
 	klass->selection_changed = NULL;
@@ -1356,6 +1371,60 @@ vte_terminal_class_init(VteTerminalClass *klass)
         g_signal_set_va_marshaller(signals[SIGNAL_CHILD_EXITED],
                                    G_OBJECT_CLASS_TYPE(klass),
                                    g_cclosure_marshal_VOID__INTv);
+
+        /**
+         * VteTerminal::notification-received:
+         * @vteterminal: the object which received the signal
+         * @summary: The summary
+         * @body: (allow-none): Extra optional text
+         *
+         * Emitted when a process running in the terminal wants to
+         * send a notification to the desktop environment.
+         */
+        signals[SIGNAL_NOTIFICATION_RECEIVED] =
+                g_signal_new(I_("notification-received"),
+                             G_OBJECT_CLASS_TYPE(klass),
+                             G_SIGNAL_RUN_LAST,
+                             G_STRUCT_OFFSET(VteTerminalClass, notification_received),
+                             NULL,
+                             NULL,
+                             _vte_marshal_VOID__STRING_STRING,
+                             G_TYPE_NONE,
+                             2, G_TYPE_STRING, G_TYPE_STRING);
+
+        /**
+         * VteTerminal::shell-precmd:
+         * @vteterminal: the object which received the signal
+         *
+         * Emitted right before an interactive shell shows a
+         * first-level prompt.
+         */
+        signals[SIGNAL_SHELL_PRECMD] =
+                g_signal_new(I_("shell-precmd"),
+                             G_OBJECT_CLASS_TYPE(klass),
+                             G_SIGNAL_RUN_LAST,
+                             G_STRUCT_OFFSET(VteTerminalClass, shell_precmd),
+                             NULL,
+                             NULL,
+                             g_cclosure_marshal_VOID__VOID,
+                             G_TYPE_NONE, 0);
+
+        /**
+         * VteTerminal::shell-preexec:
+         * @vteterminal: the object which received the signal
+         *
+         * Emitted when the interactive shell has read in a complete
+         * command and is about to execute it.
+         */
+        signals[SIGNAL_SHELL_PREEXEC] =
+                g_signal_new(I_("shell-preexec"),
+                             G_OBJECT_CLASS_TYPE(klass),
+                             G_SIGNAL_RUN_LAST,
+                             G_STRUCT_OFFSET(VteTerminalClass, shell_preexec),
+                             NULL,
+                             NULL,
+                             g_cclosure_marshal_VOID__VOID,
+                             G_TYPE_NONE, 0);
 
         /**
          * VteTerminal::window-title-changed:
@@ -2226,6 +2295,21 @@ vte_terminal_class_init(VteTerminalClass *klass)
                                       (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY));
 
         /**
+         * VteTerminal:scroll-speed:
+         *
+         * The number of lines by which the buffer is moved when
+         * scrolling with a mouse wheel on top of the terminal
+         * Setting it to zero will cause the buffer to be moved by an
+         * amount depending on the number of visible rows the widget
+         * can display.
+         */
+        pspecs[PROP_SCROLL_SPEED] =
+                g_param_spec_uint ("scroll-speed", NULL, NULL,
+                                   0, G_MAXUINT,
+                                   0,
+                                   (GParamFlags) (G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY));
+
+        /**
          * VteTerminal:scrollback-lines:
          *
          * The length of the scrollback buffer used by the terminal.  The size of
@@ -2312,6 +2396,27 @@ vte_terminal_class_init(VteTerminalClass *klass)
          */
         pspecs[PROP_WINDOW_TITLE] =
                 g_param_spec_string ("window-title", NULL, NULL,
+                                     NULL,
+                                     (GParamFlags) (G_PARAM_READABLE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY));
+
+        /**
+         * VteTerminal:current-container-name:
+         *
+         * The name of the current container, or %NULL if unset.
+         */
+        pspecs[PROP_CURRENT_CONTAINER_NAME] =
+                g_param_spec_string ("current-container-name", NULL, NULL,
+                                     NULL,
+                                     (GParamFlags) (G_PARAM_READABLE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY));
+
+        /**
+         * VteTerminal:current-container-runtime:
+         *
+         * The name of the runtime toolset used to set up the current
+         * container, or %NULL if unset.
+         */
+        pspecs[PROP_CURRENT_CONTAINER_RUNTIME] =
+                g_param_spec_string ("current-container-runtime", NULL, NULL,
                                      NULL,
                                      (GParamFlags) (G_PARAM_READABLE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY));
 
@@ -4967,6 +5072,56 @@ catch (...)
 }
 
 /**
+ * vte_terminal_get_current_container_name:
+ * @terminal: a #VteTerminal
+ *
+ * Returns: (nullable) (transfer none): the name of the current
+ *   container, or %NULL
+ */
+const char *
+vte_terminal_get_current_container_name(VteTerminal *terminal) noexcept
+try
+{
+        g_return_val_if_fail(VTE_IS_TERMINAL(terminal), NULL);
+        auto impl = IMPL(terminal);
+        if (impl->m_containers.empty())
+                return NULL;
+
+        const VteContainer &container = impl->m_containers.top();
+        return container.m_name.c_str();
+}
+catch (...)
+{
+        vte::log_exception();
+        return NULL;
+}
+
+/**
+ * vte_terminal_get_current_container_runtime:
+ * @terminal: a #VteTerminal
+ *
+ * Returns: (nullable) (transfer none): the name of the runtime
+ *   toolset used to set up the current container, or %NULL
+ */
+const char *
+vte_terminal_get_current_container_runtime(VteTerminal *terminal) noexcept
+try
+{
+        g_return_val_if_fail(VTE_IS_TERMINAL(terminal), NULL);
+        auto impl = IMPL(terminal);
+        if (impl->m_containers.empty())
+                return NULL;
+
+        const VteContainer &container = impl->m_containers.top();
+        return container.m_runtime.c_str();
+}
+catch (...)
+{
+        vte::log_exception();
+        return NULL;
+}
+
+/**
  * vte_terminal_get_current_directory_uri:
  * @terminal: a #VteTerminal
  *
@@ -5818,6 +5973,36 @@ catch (...)
 {
         vte::log_exception();
         return -1;
+}
+
+/**
+ * vte_terminal_set_scroll_speed:
+ * @terminal: a #VteTerminal
+ * @scroll_speed: move the buffer by this number of lines while scrolling
+ *
+ * Sets the number of lines by which the buffer is moved when
+ * scrolling with a mouse wheel. Setting it to zero will cause the
+ * buffer to be moved by an amount depending on the number of visible
+ * rows the widget can display.
+ */
+void
+vte_terminal_set_scroll_speed(VteTerminal *terminal,
+                              guint scroll_speed) noexcept
+try
+{
+        g_return_if_fail(VTE_IS_TERMINAL(terminal));
+
+        GObject *object = G_OBJECT(terminal);
+        g_object_freeze_notify(object);
+
+        if (IMPL(terminal)->set_scroll_speed(scroll_speed))
+                g_object_notify_by_pspec(object, pspecs[PROP_SCROLL_SPEED]);
+
+        g_object_thaw_notify(object);
+}
+catch (...)
+{
+        vte::log_exception();
 }
 
 /**
