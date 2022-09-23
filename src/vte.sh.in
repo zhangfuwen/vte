@@ -33,12 +33,10 @@ __vte_osc7 () {
 }
 
 __vte_prompt_command() {
-  local command=$(HISTTIMEFORMAT= history 1 | sed 's/^ *[0-9]\+ *//')
-  command="${command//;/ }"
   local pwd='~'
   [ "$PWD" != "$HOME" ] && pwd=${PWD/#$HOME\//\~\/}
   pwd="${pwd//[[:cntrl:]]}"
-  printf '\033]777;notify;Command completed;%s\033\\\033]777;precmd\033\\\033]0;%s@%s:%s\033\\' "${command}" "${USER}" "${HOSTNAME%%.*}" "${pwd}"
+  printf "\033]0;%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${pwd}"
   __vte_osc7
 }
 
@@ -51,9 +49,9 @@ if [[ -n "${BASH_VERSION:-}" ]]; then
     # use the __vte_prompt_command function which also sets the title.
 
     if [[ "$(declare -p PROMPT_COMMAND 2>&1)" =~ "declare -a" ]]; then
-	PROMPT_COMMAND+=(__vte_osc7) && PS0=$(printf "\033]777;preexec\033\\")
+	PROMPT_COMMAND+=(__vte_osc7)
     else
-	PROMPT_COMMAND="__vte_prompt_command" && PS0=$(printf "\033]777;preexec\033\\")
+	PROMPT_COMMAND="__vte_prompt_command"
     fi
 
 elif [[ -n "${ZSH_VERSION:-}" ]]; then
